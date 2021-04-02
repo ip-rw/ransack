@@ -1,10 +1,10 @@
 package walk
 
 import (
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // Dirs is a structure for scanning the directory tree.
@@ -40,19 +40,17 @@ func (d *Dirs) Next() (string, bool) {
 }
 
 // walk walks the trees in GOROOT and GOPATH.
-func Walk(paths []string, callback func(dir string, info os.FileInfo, err error) error) {
+func Walk(path string, callback func(dir string, info os.FileInfo, err error) error) {
 	var dirs Dirs
 	//d.bfsWalkRoot(build.Default.GOROOT)
 	dirs.paths = make([]string, 0, 1000)
 	dirs.scan = make(chan string)
 
-	for _, root := range paths{
-		dirs.bfsWalkRoot(root, callback)
-	}
+	dirs.bfsWalkRoot(path, callback)
 	close(dirs.scan)
 }
 
-type SkipDir error
+var SkipDir = errors.New("skip directory")
 
 // bfsWalkRoot walks a single directory hierarchy in breadth-first lexical order.
 // Each Go source directory it finds is delivered on d.scan.
@@ -82,11 +80,10 @@ func (d *Dirs) bfsWalkRoot(root string, callback func(dir string, info os.FileIn
 				// source files, but ignore them otherwise.
 				err := callback(dir, entry, nil)
 				if err != nil {
-					switch err.(type) {
-					case SkipDir:
+					if err == SkipDir {
 						continue
-					default:
-						break
+					} else {
+						return
 					}
 				}
 				if !entry.IsDir() {
@@ -94,12 +91,12 @@ func (d *Dirs) bfsWalkRoot(root string, callback func(dir string, info os.FileIn
 				}
 				// Entry is a directory.
 				// No .git or other dot nonsense please.
-				if strings.HasPrefix(name, ".") {
-					continue
-				}
+				//if strings.HasPrefix(name, ".") {
+				//	continue
+				//}
 				// Remember this (fully qualified) directory for the next pass.
 				next = append(next, filepath.Join(dir, name))
-				d.scan <- dir
+				//d.scan <- dir
 			}
 		}
 
