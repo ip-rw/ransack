@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package hash;
+
+service Hash {
+  rpc Lookup(Lookup) returns (LookupResult);
+  rpc SubmitHashes(SubmitHashes) returns (SubmitHashesResult);
+}
+
+message Lookup {
+  repeated uint64 hashes = 1;
+}
+
+message DirectoryHash {
+  uint64 hash = 1;
+  string name = 2;
+}
+
+message LookupResult {
+  repeated uint64 requestedHashes = 1;
+  repeated DirectoryHash foundHashes = 2;
+}
+
+message SubmitHashes {
+  repeated DirectoryHash directoryHashes = 1;
+}
+
+message SubmitHashesResult {
+  bool success = 1;
+}
