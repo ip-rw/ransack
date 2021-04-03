@@ -12,7 +12,7 @@ import (
 	"leb.io/aeshash"
 )
 
-type Kfe struct {
+type DirectoryHash struct {
 	root  int
 	level int
 	Path  string
@@ -39,7 +39,7 @@ func fullName(path string, fi os.FileInfo) string {
 type FsHash struct {
 	lock     *sync.RWMutex
 	hf       hash.Hash64 //= aeshash.NewAES(0)
-	Hmap     map[uint64][]Kfe
+	Hmap     map[uint64][]DirectoryHash
 	Pmap     map[string]uint64
 	Roots    []string
 	Scanning bool
@@ -48,21 +48,31 @@ type FsHash struct {
 func NewFsHash(roots []string) *FsHash {
 	return &FsHash{
 		lock:  &sync.RWMutex{},
-		Hmap:  make(map[uint64][]Kfe, 100),
-		Pmap:  make(map[string]uint64),
+		Hmap:  map[uint64][]DirectoryHash{},
+		Pmap:  map[string]uint64{},
 		hf:    aeshash.NewAES(0),
 		Roots: roots,
 	}
 }
 
 // calculate Hash using name+Size only!
-func (fs *FsHash) SaveGob(fp string) error {
-	f, err := os.Create(fp)
-	defer f.Close()
+func (f *FsHash) Lock() {
+	f.lock.Lock()
+}
+
+func (f *FsHash) Unlock() {
+	f.lock.Unlock()
+}
+
+func (f *FsHash) SaveGob(fp string) error {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	fle, err := os.Create(fp)
+	defer fle.Close()
 	if err != nil {
 		return fmt.Errorf("%v\n", err)
 	}
-	if err := gob.NewEncoder(f).Encode(fs); err != nil {
+	if err := gob.NewEncoder(fle).Encode(f); err != nil {
 		return fmt.Errorf("%v\n", err)
 	}
 	return nil
@@ -101,38 +111,38 @@ func (f *FsHash) fileHash(fi os.FileInfo) (r uint64) {
 	return r
 }
 
-// add a Kfe to the Hash map. check for inline
-func (f *FsHash) add(hash uint64, k *Kfe) {
+// add a DirectoryHash to the Hash map. check for inline
+func (f *FsHash) add(hash uint64, k *DirectoryHash) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	//fmt.Printf("add: Kfe=%v\n", k)
+	//fmt.Printf("add: DirectoryHash=%v\n", k)
 	_, ok := f.Hmap[hash]
 	if !ok {
-		f.Hmap[hash] = []Kfe{*k}
+		f.Hmap[hash] = []DirectoryHash{*k}
 	} else {
 		f.Hmap[hash] = append(f.Hmap[hash], *k)
 	}
 	f.Pmap[k.Path] = hash
 }
 
-// addDir a file entry to the Hash map.
-func (f *FsHash) addFile(root, level int, path string, fi os.FileInfo, hash uint64, size int64) {
+// AddDir a file entry to the Hash map.
+func (f *FsHash) AddFile(root, level int, path string, fi os.FileInfo, hash uint64, size int64) {
 	p := fullName(path, fi)
 	if verbose {
-		fmt.Printf("addFile: Hash=%016x, p=%q\n", hash, path)
+		fmt.Printf("AddFile: Hash=%016x, p=%q\n", hash, path)
 	}
-	k1 := Kfe{root, level, p, fi.Size(), 0}
+	k1 := DirectoryHash{root, level, p, fi.Size(), 0}
 	f.add(hash, &k1)
 }
 
-// addDir a directory entry to the Hash map.
-func (f *FsHash) addDir(root, level int, path string, fi os.FileInfo, hash uint64, size int64) {
+// AddDir a directory entry to the Hash map.
+func (f *FsHash) AddDir(root, level int, path string, fi os.FileInfo, hash uint64, size int64) {
 	p := fullName(path, fi)
-	//fmt.Printf("addDir: Path=%q, fi.Name()=%q, p=%q, Size=%d, level=%d, Hash=0x%016x\n", Path, fi.Name(), p, Size, level, Hash)
+	//fmt.Printf("AddDir: Path=%q, fi.Name()=%q, p=%q, Size=%d, level=%d, Hash=0x%016x\n", Path, fi.Name(), p, Size, level, Hash)
 	if verbose {
-		fmt.Printf("addDir : Hash=%016x, p=%q\n", hash, p)
+		fmt.Printf("AddDir : Hash=%016x, p=%q\n", hash, p)
 	}
-	k1 := Kfe{root, level, p, size, hash}
+	k1 := DirectoryHash{root, level, p, size, hash}
 	f.add(hash, &k1)
 }
 
@@ -174,7 +184,7 @@ func (f *FsHash) descend(root int, path string, fis []os.FileInfo, callback func
 				hash = h
 				gh.Write64(hash)
 				sizes += size
-				f.addDir(root, level, path, fi, hash, size)
+				f.AddDir(root, level, path, fi, hash, size)
 			case fi.Mode()&os.ModeType == 0:
 				for _, name := range ignoreList {
 					if fi.Name() == name {
@@ -206,7 +216,7 @@ func (f *FsHash) descend(root int, path string, fis []os.FileInfo, callback func
 }
 
 // scan the Roots (dirs) and files passed on the command line and records their hashes in a map.
-func (f *FsHash) LookupHash(hash uint64) []Kfe {
+func (f *FsHash) LookupHash(hash uint64) []DirectoryHash {
 	f.lock.RLock()
 	defer f.lock.RUnlock()
 
