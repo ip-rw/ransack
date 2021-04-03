@@ -131,6 +131,8 @@ func main() {
 				}
 
 				//fmt.Println("done", fullpath)
+			} else {
+				search
 			}
 			return nil
 		})
