@@ -14,122 +14,122 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// HashClient is the client API for Hash service.
+// HashServiceClient is the client API for HashService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type HashClient interface {
+type HashServiceClient interface {
 	Lookup(ctx context.Context, in *Hashes, opts ...grpc.CallOption) (*LookupResult, error)
 	SubmitHashes(ctx context.Context, in *DirectoryHashes, opts ...grpc.CallOption) (*Result, error)
 }
 
-type hashClient struct {
+type hashServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewHashClient(cc grpc.ClientConnInterface) HashClient {
-	return &hashClient{cc}
+func NewHashServiceClient(cc grpc.ClientConnInterface) HashServiceClient {
+	return &hashServiceClient{cc}
 }
 
-func (c *hashClient) Lookup(ctx context.Context, in *Hashes, opts ...grpc.CallOption) (*LookupResult, error) {
+func (c *hashServiceClient) Lookup(ctx context.Context, in *Hashes, opts ...grpc.CallOption) (*LookupResult, error) {
 	out := new(LookupResult)
-	err := c.cc.Invoke(ctx, "/hash.Hash/Lookup", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hash.HashService/Lookup", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hashClient) SubmitHashes(ctx context.Context, in *DirectoryHashes, opts ...grpc.CallOption) (*Result, error) {
+func (c *hashServiceClient) SubmitHashes(ctx context.Context, in *DirectoryHashes, opts ...grpc.CallOption) (*Result, error) {
 	out := new(Result)
-	err := c.cc.Invoke(ctx, "/hash.Hash/SubmitHashes", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hash.HashService/SubmitHashes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// HashServer is the server API for Hash service.
-// All implementations must embed UnimplementedHashServer
+// HashServiceServer is the server API for HashService service.
+// All implementations must embed UnimplementedHashServiceServer
 // for forward compatibility
-type HashServer interface {
+type HashServiceServer interface {
 	Lookup(context.Context, *Hashes) (*LookupResult, error)
 	SubmitHashes(context.Context, *DirectoryHashes) (*Result, error)
-	mustEmbedUnimplementedHashServer()
+	mustEmbedUnimplementedHashServiceServer()
 }
 
-// UnimplementedHashServer must be embedded to have forward compatible implementations.
-type UnimplementedHashServer struct {
+// UnimplementedHashServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedHashServiceServer struct {
 }
 
-func (UnimplementedHashServer) Lookup(context.Context, *Hashes) (*LookupResult, error) {
+func (UnimplementedHashServiceServer) Lookup(context.Context, *Hashes) (*LookupResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Lookup not implemented")
 }
-func (UnimplementedHashServer) SubmitHashes(context.Context, *DirectoryHashes) (*Result, error) {
+func (UnimplementedHashServiceServer) SubmitHashes(context.Context, *DirectoryHashes) (*Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitHashes not implemented")
 }
-func (UnimplementedHashServer) mustEmbedUnimplementedHashServer() {}
+func (UnimplementedHashServiceServer) mustEmbedUnimplementedHashServiceServer() {}
 
-// UnsafeHashServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HashServer will
+// UnsafeHashServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HashServiceServer will
 // result in compilation errors.
-type UnsafeHashServer interface {
-	mustEmbedUnimplementedHashServer()
+type UnsafeHashServiceServer interface {
+	mustEmbedUnimplementedHashServiceServer()
 }
 
-func RegisterHashServer(s grpc.ServiceRegistrar, srv HashServer) {
-	s.RegisterService(&Hash_ServiceDesc, srv)
+func RegisterHashServiceServer(s grpc.ServiceRegistrar, srv HashServiceServer) {
+	s.RegisterService(&HashService_ServiceDesc, srv)
 }
 
-func _Hash_Lookup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _HashService_Lookup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Hashes)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HashServer).Lookup(ctx, in)
+		return srv.(HashServiceServer).Lookup(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hash.Hash/Lookup",
+		FullMethod: "/hash.HashService/Lookup",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HashServer).Lookup(ctx, req.(*Hashes))
+		return srv.(HashServiceServer).Lookup(ctx, req.(*Hashes))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Hash_SubmitHashes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _HashService_SubmitHashes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DirectoryHashes)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HashServer).SubmitHashes(ctx, in)
+		return srv.(HashServiceServer).SubmitHashes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hash.Hash/SubmitHashes",
+		FullMethod: "/hash.HashService/SubmitHashes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HashServer).SubmitHashes(ctx, req.(*DirectoryHashes))
+		return srv.(HashServiceServer).SubmitHashes(ctx, req.(*DirectoryHashes))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Hash_ServiceDesc is the grpc.ServiceDesc for Hash service.
+// HashService_ServiceDesc is the grpc.ServiceDesc for HashService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Hash_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hash.Hash",
-	HandlerType: (*HashServer)(nil),
+var HashService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hash.HashService",
+	HandlerType: (*HashServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Lookup",
-			Handler:    _Hash_Lookup_Handler,
+			Handler:    _HashService_Lookup_Handler,
 		},
 		{
 			MethodName: "SubmitHashes",
-			Handler:    _Hash_SubmitHashes_Handler,
+			Handler:    _HashService_SubmitHashes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -1,7 +1,7 @@
 package hooks
 
 import (
-	"github.com/ip-rw/sshpider/pkg/structs"
+	"github.com/ip-rw/ransack/pkg/models"
 	"os"
 	"strings"
 )
@@ -16,6 +16,6 @@ func (p *FileInfo) Lpath() string {
 }
 
 type Plugin interface {
-	Search(*structs.ScanResults, FileInfo, []byte) (bool, error)
+	Search(models.MachineServiceClient, FileInfo, []byte) (bool, error)
 	Name() string
 }

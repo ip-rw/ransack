@@ -1,36 +1,81 @@
 package result
 
 import (
+	"context"
 	"fmt"
 	"github.com/ip-rw/ransack/pkg/models"
+	"github.com/ip-rw/ransack/pkg/proto"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"os"
+	"os/user"
+	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 type ScanResults struct {
-	PrivateKeys []*models.Key
-	Targets     []*models.Machine
-
-	dupMap *sync.Map
+	MachineID string
+	Client    proto.MachineServiceClient
 }
 
-func NewScanResults() *ScanResults {
-	return &ScanResults{
-		PrivateKeys: make([]*models.Key, 0),
-		Targets:     make([]*models.Machine, 0),
-		dupMap:      &sync.Map{},
+func GetOwner(path string) string {
+	info, err := os.Stat(path)
+	if err != nil {
+		return ""
 	}
+	var uid int
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		uid = int(stat.Uid)
+	} else {
+		uid = os.Getuid()
+	}
+	user, err := user.LookupId(strconv.Itoa(uid))
+	if err != nil {
+		return ""
+	}
+	return user.Username
 }
 
-func (s *ScanResults) AddPrivateKey(key *PrivateKey) bool {
-	if key != nil {
-		if _, loaded := s.dupMap.LoadOrStore("PrivateKey"+string(key.Signer.PublicKey().Marshal()), 1); !loaded {
-			s.PrivateKeys = append(s.PrivateKeys, key)
-			return true
+func (s *ScanResults) GetMachineRequest() *proto.MachineRequest {
+	return &proto.MachineRequest{MachineID: s.MachineID}
+}
+
+func (s *ScanResults) AddUser(username string) *proto.AddResult {
+	res, err := s.Client.AddUser(context.Background(), &proto.AddUserRequest{
+		Request: s.GetMachineRequest(),
+		User: &proto.User{
+			Username: username,
+		},
+	})
+	if err != nil {
+		return &proto.AddResult{
+			Added: false,
+			Id:    -1,
 		}
 	}
-	return false
+	return res
+}
+
+func (s *ScanResults) AddPrivateKey(user string, path string, data []byte) models.AddResult {
+	ures := s.AddUser(user)
+	key, err := models.ParseKey(path, data)
+	if err != nil {
+		return proto.AddResult{
+			Added: false,
+			Id:    -1,
+		}
+	}
+	s.Client.AddKey(context.Background(), &proto.AddKeyRequest{
+		Request: s.GetMachineRequest(),
+		Key: &proto.Key{
+			Data:          data,
+			Path:          path,
+			UserID:        ures.Id,
+			CryptPassword: "",
+		},
+	})
 }
 
 func (s *ScanResults) AddHost(host *Host) bool {

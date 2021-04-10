@@ -17,7 +17,7 @@ const (
 )
 
 type server struct {
-	proto.UnimplementedHashServer
+	proto.UnimplementedHashServiceServer
 }
 
 var fsh *hash.FsHash
@@ -61,7 +61,7 @@ func (s *server) SubmitHashes(context context.Context, hashes *proto.DirectoryHa
 
 func main() {
 	if fsh, _ = hash.Load("fsh.bin"); fsh == nil {
-		fsh = hash.NewFsHash([]string{})
+		fsh = hash.NewFsHash()
 	}
 	go func() {
 		for {
@@ -77,7 +77,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	proto.RegisterHashServer(s, &server{})
+	proto.RegisterHashServiceServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

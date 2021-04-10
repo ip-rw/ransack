@@ -45,13 +45,12 @@ type FsHash struct {
 	Scanning bool
 }
 
-func NewFsHash(roots []string) *FsHash {
+func NewFsHash() *FsHash {
 	return &FsHash{
-		lock:  &sync.RWMutex{},
-		Hmap:  map[uint64][]DirectoryHash{},
-		Pmap:  map[string]uint64{},
-		hf:    aeshash.NewAES(0),
-		Roots: roots,
+		lock: &sync.RWMutex{},
+		Hmap: map[uint64][]DirectoryHash{},
+		Pmap: map[string]uint64{},
+		hf:   aeshash.NewAES(0),
 	}
 }
 
@@ -125,16 +124,6 @@ func (f *FsHash) add(hash uint64, k *DirectoryHash) {
 	f.Pmap[k.Path] = hash
 }
 
-// AddDir a file entry to the Hash map.
-func (f *FsHash) AddFile(root, level int, path string, fi os.FileInfo, hash uint64, size int64) {
-	p := fullName(path, fi)
-	if verbose {
-		fmt.Printf("AddFile: Hash=%016x, p=%q\n", hash, path)
-	}
-	k1 := DirectoryHash{root, level, p, fi.Size(), 0}
-	f.add(hash, &k1)
-}
-
 // AddDir a directory entry to the Hash map.
 func (f *FsHash) AddDir(root, level int, path string, fi os.FileInfo, hash uint64, size int64) {
 	p := fullName(path, fi)
@@ -148,7 +137,6 @@ func (f *FsHash) AddDir(root, level int, path string, fi os.FileInfo, hash uint6
 
 // descent recursively descends the directory hierarchy.
 func (f *FsHash) descend(root int, path string, fis []os.FileInfo, callback func(path string, hash uint64, level int)) (uint64, int64) {
-
 	var level = -1
 	var des func(root int, path string, fis []os.FileInfo) (uint64, int64)
 	des = func(root int, path string, fis []os.FileInfo) (uint64, int64) {
@@ -240,9 +228,9 @@ func (f *FsHash) LookupPath(path string) uint64 {
 	return 0
 }
 
-func (f *FsHash) Scan(callback func(path string, hash uint64, level int)) {
+func (f *FsHash) Scan(roots []string, callback func(path string, hash uint64, level int)) {
 	f.Scanning = true
-	for k, path := range f.Roots {
+	for k, path := range roots {
 		fi, err := os.Stat(path)
 		if err != nil || fi == nil {
 			fmt.Printf("fi=%#v, err=%v\n", fi, err)

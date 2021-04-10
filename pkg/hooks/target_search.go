@@ -1,6 +1,7 @@
 package hooks
 
 import (
+	"github.com/ip-rw/ransack/pkg/models"
 	"github.com/ip-rw/sshpider/pkg/search"
 	"github.com/ip-rw/sshpider/pkg/structs"
 	"github.com/sirupsen/logrus"
@@ -18,7 +19,7 @@ func IsExecAny(mode os.FileMode) bool {
 func (p *TargetSearch) Name() string {
 	return "target search"
 }
-func (p *TargetSearch) Search(results *structs.ScanResults, file FileInfo, data []byte) (bool, error) {
+func (p *TargetSearch) Search(results models.MachineServiceClient, file FileInfo, data []byte) (bool, error) {
 	targets := search.ExtractTargets(data)
 	if targets != nil {
 		for _, target := range targets {

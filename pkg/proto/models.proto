@@ -1,0 +1,99 @@
+syntax = "proto3";
+package proto;
+option go_package = "pkg/proto";
+
+
+message Credential {
+  uint64 id = 1;
+  uint64 userID = 2;
+  uint64 passwordID = 3;
+}
+
+message Key {
+  uint64 id = 1;
+  bytes data = 2;
+  string path = 3;
+  uint64 userID = 4;
+  string cryptPassword = 6; //todo
+}
+
+message Machine {
+  uint64 id = 1;
+  string machineID = 2;
+  string hostname = 3;
+  string ip = 4;
+
+  repeated User users = 5;
+  repeated Password passwords = 6;
+  repeated Key keys = 7;
+  repeated Credential valid = 8;
+}
+
+message Password {
+  uint64 id = 1;
+  string password = 2;
+  uint64 userID = 3;
+}
+
+message User {
+  uint64 id = 1;
+  string username = 2;
+}
+
+message Host {
+  uint64 id = 1;
+  string ip = 2;
+  int64 port = 3;
+  string fingerprint = 4;
+}
+
+message Target {
+  uint64 id = 1;
+  Host host = 2;
+  Credential credential = 3;
+  bool valid = 4;
+}
+
+message AddUserRequest {
+  MachineRequest request = 1;
+  User user = 2 ;
+}
+
+message AddPasswordRequest {
+  MachineRequest request = 1;
+  Password password = 2 ;
+}
+
+message AddKeyRequest {
+  MachineRequest request = 1;
+  Key key = 2 ;
+}
+message AddHostRequest {
+  MachineRequest request = 1;
+  Host host = 2 ;
+}
+
+message AddMachineRequest {
+  MachineRequest request = 1;
+  string hostname = 2;
+  repeated string ips = 3;
+}
+
+message MachineRequest {
+  string machineID = 1;
+}
+
+message AddResult {
+  bool added = 1;
+  uint64 id = 2;
+}
+
+service MachineService {
+  rpc AddUser(AddUserRequest) returns (AddResult);
+  rpc AddPassword(AddPasswordRequest) returns (AddResult);
+  rpc AddKey(AddKeyRequest) returns (AddResult);
+  rpc AddHost(AddHostRequest) returns (AddResult);
+
+  rpc GetMachine(MachineRequest) returns (Machine);
+}
+

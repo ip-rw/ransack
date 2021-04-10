@@ -27,7 +27,7 @@ message Result {
   int64 affected = 2;
 }
 
-service Hash {
+service HashService {
   rpc Lookup(Hashes) returns (LookupResult);
   rpc SubmitHashes(DirectoryHashes) returns (Result);
 }

@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/ip-rw/ransack/pkg/core"
+	"github.com/ip-rw/ransack/pkg/factory"
 	"github.com/ip-rw/ransack/pkg/hash"
 	"github.com/ip-rw/ransack/pkg/proto"
 	"github.com/ip-rw/ransack/pkg/walk"
 	"github.com/paulbellamy/ratecounter"
-	"google.golang.org/grpc"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -16,21 +16,11 @@ import (
 )
 
 var (
-	sem = make(chan int, 100)
-	wg  = &sync.WaitGroup{}
-	fsh *hash.FsHash
-
-	client proto.HashClient
+	sem    = make(chan int, 100)
+	wg     = &sync.WaitGroup{}
+	fsh    *hash.FsHash
+	client = factory.GetHashClient("127.0.0.1:50051")
 )
-
-func connect() {
-	conn, err := grpc.Dial("127.0.0.1:50051", grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	//defer conn.Close()
-	client = proto.NewHashClient(conn)
-}
 
 func lookupHash(hash uint64) (*proto.LookupResult, error) {
 	hashes := proto.Hashes{
@@ -82,13 +72,12 @@ func hashSubmitter() chan *proto.DirectoryHash {
 }
 
 func main() {
-	connect()
 	dhChan := hashSubmitter()
 
 	var dirHashChan = make(chan string, 1)
 	var hashrate = ratecounter.NewRateCounter(time.Second * 5)
 	roots := []string{"/home/none"}
-	var fsh = hash.NewFsHash(roots)
+	var fsh = hash.NewFsHash()
 
 	go func() {
 		for fsh.Scanning {
@@ -97,7 +86,7 @@ func main() {
 		}
 	}()
 
-	fsh.Scan(func(path string, hash uint64, length int) {
+	fsh.Scan(roots, func(path string, hash uint64, length int) {
 		// if hash not found
 		hashrate.Incr(1)
 	})
@@ -132,7 +121,7 @@ func main() {
 
 				//fmt.Println("done", fullpath)
 			} else {
-				search
+				core.SearchFile(fullpath, info)
 			}
 			return nil
 		})

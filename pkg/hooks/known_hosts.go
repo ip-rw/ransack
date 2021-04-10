@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"bytes"
+	"github.com/ip-rw/ransack/pkg/models"
 	"github.com/ip-rw/sshpider/pkg/knownhosts"
 	"github.com/ip-rw/sshpider/pkg/structs"
 	"github.com/sirupsen/logrus"
@@ -17,7 +18,7 @@ func (p *KnownHosts) Name() string {
 	return "known hosts"
 }
 
-func (p *KnownHosts) Search(results *structs.ScanResults, file FileInfo, data []byte) (bool, error) {
+func (p *KnownHosts) Search(results models.MachineServiceClient, file FileInfo, data []byte) (bool, error) {
 	username := knownhosts.GetOwner(file.Path)
 	kh, err := knownhosts.ParseKnownHosts(bytes.NewReader(data), username)
 	if err != nil {

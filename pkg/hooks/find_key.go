@@ -3,6 +3,7 @@ package hooks
 import (
 	"bytes"
 	"errors"
+	"github.com/ip-rw/ransack/pkg/models"
 	"github.com/ip-rw/sshpider/pkg/knownhosts"
 	"github.com/ip-rw/sshpider/pkg/structs"
 	"github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ var privBytes = []byte("-----BEGIN ")
 var privRegex = regexp.MustCompile("-----BEGIN.*PRIVATE KEY-----\n")
 var ossh64 = []byte("b3BlbnNzaC1rZXktdjE")
 
-func (p *FindKey) Search(results *structs.ScanResults, file FileInfo, data []byte) (bool, error) {
+func (p *FindKey) Search(results models.MachineServiceClient, file FileInfo, data []byte) (bool, error) {
 	if bytes.Index(data, privBytes) > -1 {
 		if !bytes.Contains(data, ossh64) || strings.Index(file.Name(), "id_") == 0 {
 			return true, errors.New("bad type")

@@ -14,12 +14,7 @@ type Machine struct {
 	IP        string
 	Users     []*User     `gorm:"many2many:user_machines;"`
 	Passwords []*Password `gorm:"many2many:password_machines;"`
-	Keys      []*Key
-}
-
-type Login struct {
-	gorm.Model
-	UserID uint
+	Keys      []*Key      `gorm:"many2many:key_machines;"`
 }
 
 type Key struct {
@@ -27,8 +22,8 @@ type Key struct {
 	Data []byte
 	Path string
 
-	UserID    uint
-	MachineID uint
+	Users    []*User    `gorm:"many2many:key_users;"`
+	Machines []*Machine `gorm:"many2many:key_machines;"`
 
 	signer ssh.Signer
 }
@@ -65,6 +60,23 @@ type User struct {
 
 	Machines  []*Machine  `gorm:"many2many:user_machines;"`
 	Passwords []*Password `gorm:"many2many:user_passwords;"`
+	Keys      []*Machine  `gorm:"many2many:key_users;"`
+}
+
+type Target struct {
+	gorm.Model
+	HostID       uint
+	Host         *Host
+	CredentialID uint
+	Credential   *Credential
+	Valid        bool
+}
+
+type Host struct {
+	gorm.Model
+	IP          string
+	Port        int
+	Fingerprint string
 }
 
 type Credential struct {
@@ -73,4 +85,6 @@ type Credential struct {
 	User       *User
 	PasswordID uint
 	Password   *Password
+	KeyID      uint
+	Key        *Key
 }
